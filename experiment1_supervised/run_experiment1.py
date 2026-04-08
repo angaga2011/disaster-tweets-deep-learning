@@ -30,6 +30,7 @@ from config import (  # noqa: E402
     build_experiment_grid,
     resolve_default_train_path,
 )
+from exploration import generate_exploration_artifacts  # noqa: E402
 from reporting import write_summary_artifacts  # noqa: E402
 from trainer import run_single_experiment  # noqa: E402
 from utils import make_output_dirs, set_global_seed, sync_run_to_latest, write_text  # noqa: E402
@@ -111,6 +112,45 @@ def get_class_weights(y_train) -> Dict[int, float]:
     return {int(c): float(w) for c, w in zip(classes, weights)}
 
 
+def balance_binary_training_set(x_train, y_train, seed: int = SEED):
+    """
+    Balance binary classes in training split via random oversampling.
+    Keeps validation/test untouched.
+    """
+    x_arr = np.array(x_train)
+    y_arr = np.array(y_train)
+    classes, counts = np.unique(y_arr, return_counts=True)
+
+    if len(classes) != 2 or counts[0] == counts[1]:
+        return x_arr, y_arr, {
+            "before": {int(c): int(n) for c, n in zip(classes, counts)},
+            "after": {int(c): int(n) for c, n in zip(classes, counts)},
+            "applied": False,
+        }
+
+    majority_class = classes[np.argmax(counts)]
+    minority_class = classes[np.argmin(counts)]
+    majority_count = int(np.max(counts))
+
+    idx_major = np.where(y_arr == majority_class)[0]
+    idx_minor = np.where(y_arr == minority_class)[0]
+
+    rng = np.random.default_rng(seed)
+    idx_minor_upsampled = rng.choice(idx_minor, size=majority_count, replace=True)
+    idx_balanced = np.concatenate([idx_major, idx_minor_upsampled])
+    rng.shuffle(idx_balanced)
+
+    x_bal = x_arr[idx_balanced]
+    y_bal = y_arr[idx_balanced]
+
+    classes_after, counts_after = np.unique(y_bal, return_counts=True)
+    return x_bal, y_bal, {
+        "before": {int(c): int(n) for c, n in zip(classes, counts)},
+        "after": {int(c): int(n) for c, n in zip(classes_after, counts_after)},
+        "applied": True,
+    }
+
+
 def build_cli() -> argparse.Namespace:
     default_train = resolve_default_train_path(REPO_ROOT)
     default_output = os.path.join(THIS_DIR, "outputs")
@@ -121,6 +161,17 @@ def build_cli() -> argparse.Namespace:
     parser.add_argument("--max_experiments", type=int, default=0)
     parser.add_argument("--output_dir", default=default_output)
     parser.add_argument("--quick_mode", action="store_true")
+    parser.add_argument(
+        "--balance_train",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Balance training split with random oversampling (default: enabled).",
+    )
+    parser.add_argument(
+        "--explore_only",
+        action="store_true",
+        help="Run only dataset exploration artifacts, then exit.",
+    )
     return parser.parse_args()
 
 
@@ -152,9 +203,39 @@ def main():
             print(f"Output archive run dir: {paths['run_root']}")
 
             train_df, _ = load_dataset(args.train)
+            exploration_meta = generate_exploration_artifacts(
+                train_df=train_df,
+                out_dir=paths["run_exploration"],
+            )
+            print("Exploration artifacts saved:")
+            print(f"- {paths['run_exploration']}")
+            print(f"- class_counts={exploration_meta['class_counts']}")
+            print(f"- imbalance_ratio={exploration_meta['imbalance_ratio']:.3f}")
+
+            if args.explore_only:
+                print("Explore-only mode enabled. Skipping model training.")
+                return
+
             x_train, x_val, x_test, y_train, y_val, y_test = make_train_val_test_split(
                 train_df
             )
+            balance_info = {
+                "before": {
+                    int(k): int(v) for k, v in zip(*np.unique(y_train, return_counts=True))
+                },
+                "after": {
+                    int(k): int(v) for k, v in zip(*np.unique(y_train, return_counts=True))
+                },
+                "applied": False,
+            }
+            if args.balance_train:
+                x_train, y_train, balance_info = balance_binary_training_set(
+                    x_train, y_train, seed=SEED
+                )
+                print(f"Train balancing applied: {balance_info['applied']}")
+                print(f"- class counts before: {balance_info['before']}")
+                print(f"- class counts after: {balance_info['after']}")
+
             vec = TextVectorizerWrapper()
             vec.adapt(x_train)
 

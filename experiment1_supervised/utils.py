@@ -45,6 +45,7 @@ def make_output_dirs(base_output_dir: str) -> Dict[str, str]:
         "metrics": run_dir / "metrics",
         "summaries": run_dir / "summaries",
         "summary": run_dir / "summary",
+        "exploration": run_dir / "exploration",
         "logs": run_dir / "logs",
     }
 
@@ -69,12 +70,14 @@ def make_output_dirs(base_output_dir: str) -> Dict[str, str]:
         "run_metrics": str(run_subdirs["metrics"]),
         "run_summaries": str(run_subdirs["summaries"]),
         "run_summary": str(run_subdirs["summary"]),
+        "run_exploration": str(run_subdirs["exploration"]),
         "run_logs": str(run_subdirs["logs"]),
         "latest_plots": str(latest_subdirs["plots"]),
         "latest_confusion_matrices": str(latest_subdirs["confusion_matrices"]),
         "latest_metrics": str(latest_subdirs["metrics"]),
         "latest_summaries": str(latest_subdirs["summaries"]),
         "latest_summary": str(latest_subdirs["summary"]),
+        "latest_exploration": str(latest_subdirs["exploration"]),
         "latest_logs": str(latest_subdirs["logs"]),
     }
 
