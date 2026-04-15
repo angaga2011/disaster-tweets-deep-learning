@@ -47,3 +47,25 @@ Generated artifacts include:
   - `leaderboard_by_test_accuracy.csv`
   - `experiment1_report.md`
   - best-model comparison plot in `plots/best_models_comparison.png`
+
+## Final Report-Ready Results Layer
+
+To create a clean, minimal folder for report writing/presentation:
+
+```bash
+python experiment1_supervised/create_results_final.py
+```
+
+This generates:
+
+- `experiment1_supervised/results_final/`
+
+Contents include:
+
+- `all_experiments_summary.csv`
+- `leaderboard_by_test_f1.csv`
+- best CNN, best BiLSTM, and overall-best training curves
+- best CNN, best BiLSTM, and overall-best test confusion matrices
+- `overall_best_model.png` (best-model comparison plot)
+- `final_summary.txt` (human-readable final summary)
+- `collection_notes.txt` (copied/missing file notes)

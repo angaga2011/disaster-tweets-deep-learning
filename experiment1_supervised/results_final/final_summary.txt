@@ -1,0 +1,15 @@
+Experiment 1 Final Summary
+============================
+
+Best models
+- Overall best: bilstm_u64_single_d64_do03_l2e4_no_bn (Test F1=0.7541, Test Accuracy=0.8012)
+- Best CNN: cnn_f64_k5_d32_do05_l2e4_no_bn (Test F1=0.7508, Test Accuracy=0.7960)
+- Best BiLSTM: bilstm_u64_single_d64_do03_l2e4_no_bn (Test F1=0.7541, Test Accuracy=0.8012)
+
+Brief comparison
+- Better family by Test F1: BiLSTM.
+- Precision/recall: CNN (P=0.7905, R=0.7149) vs BiLSTM (P=0.8056, R=0.7088). Higher precision: BiLSTM; higher recall: CNN.
+
+Notes
+- This summary is generated from outputs/latest artifacts only.
+- Missing artifacts are listed in collection_notes.txt.
